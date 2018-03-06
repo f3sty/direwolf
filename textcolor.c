@@ -79,7 +79,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-
+#include <string.h>
 
 #if __WIN32__
 
@@ -94,18 +94,19 @@
 /* Makes no sense but I stumbled across that somewhere. */
 
 static const char background_white[] = "\e[5;47m";
+static const char background_black[] = "\e[0;30m";
 
 /* Whenever a dark color is used, the */
 /* background is reset and needs to be set again. */
 
-static const char black[]	= "\e[0;30m" "\e[5;47m";
-static const char red[] 	= "\e[1;31m";
-static const char green[] 	= "\e[1;32m";
-static const char yellow[] 	= "\e[1;33m";
-static const char blue[] 	= "\e[1;34m";
-static const char magenta[] 	= "\e[1;35m";
-static const char cyan[] 	= "\e[1;36m";
-static const char dark_green[]	= "\e[0;32m" "\e[5;47m";
+static const char black[]	 = "\e[0;30m";
+static const char red[] 	 = "\e[1;31m";
+static const char green[] 	 = "\e[1;32m";
+static const char yellow[] 	 = "\e[1;33m";
+static const char blue[] 	 = "\e[1;34m";
+static const char magenta[] 	 = "\e[1;35m";
+static const char cyan[] 	 = "\e[1;36m";
+static const char dark_green[]	 = "\e[0;32m";
 
 /* Clear from cursor to end of screen. */
 
@@ -121,18 +122,21 @@ static const char clear_eos[]	= "\e[0J";
 /* If you do get blinking, remove all references to "\e[5;47m" */
 
 static const char background_white[] = "\e[5;47m";
+static const char background_black[] = "\e[0;30m";
 
 /* Whenever a dark color is used, the */
 /* background is reset and needs to be set again. */
 
-static const char black[]	= "\e[0;30m" "\e[5;47m";
-static const char red[] 	= "\e[1;31m" "\e[5;47m";
-static const char green[] 	= "\e[1;32m" "\e[5;47m";
-//static const char yellow[] 	= "\e[1;33m" "\e[5;47m";
-static const char blue[] 	= "\e[1;34m" "\e[5;47m";
-static const char magenta[] 	= "\e[1;35m" "\e[5;47m";
-//static const char cyan[] 	= "\e[1;36m" "\e[5;47m";
-static const char dark_green[]	= "\e[0;32m" "\e[5;47m";
+static const char black[]	= "\e[0;30m";
+static const char white[]	= "\e[1;37m";
+static const char red[] 	= "\e[1;31m";
+static const char green[] 	= "\e[1;32m";
+//static const char yellow[] 	= "\e[1;33m";
+static const char blue[] 	= "\e[1;34m";
+static const char magenta[] 	= "\e[1;35m";
+//static const char cyan[] 	= "\e[1;36m";
+static const char dark_green[]	= "\e[0;32m";
+
 
 /* Clear from cursor to end of screen. */
 
@@ -145,12 +149,14 @@ static const char clear_eos[]	= "\e[0J";
 		/* Test done using gnome-terminal and xterm */
 
 static const char background_white[] = "\e[48;2;255;255;255m";
+static const char background_black[] = "\e[0;30m";
 
 /* Whenever a dark color is used, the */
 /* background is reset and needs to be set again. */
 
 
 static const char black[]	= "\e[0;30m" "\e[48;2;255;255;255m";
+static const char white[]	= "\e[0;48m" "\e[48;2;255;255;255m";
 static const char red[] 	= "\e[0;31m" "\e[48;2;255;255;255m";
 static const char green[] 	= "\e[0;32m" "\e[48;2;255;255;255m";
 //static const char yellow[] 	= "\e[0;33m" "\e[48;2;255;255;255m";
@@ -164,6 +170,7 @@ static const char dark_green[]	= "\e[0;32m" "\e[48;2;255;255;255m";
 
 
 static const char background_white[] = "\e[47;1m";
+static const char background_black[] = "\e[0;30m";
 
 /* Whenever a dark color is used, the */
 /* background is reset and needs to be set again. */
@@ -195,16 +202,28 @@ static const char clear_eos[]	= "\e[0J";
  * g_enable_color:
  *	0 = disable text colors.
  *	1 = normal.
+ *	2 = black background.
  *	others... future possibility.
  */
 
 static int g_enable_color = 1;
+char background[64];
 
 
 void text_color_init (int enable_color)
 {
 
 	g_enable_color = enable_color;
+
+	if (g_enable_color == 1) {
+	  memcpy(background, background_white, sizeof(background_white));
+	  printf("%s Setting white background\n", background);
+	}
+	else if (g_enable_color == 2) {
+	  memcpy(background, background_black, sizeof(background_black));
+	  printf("%s Setting black background\n", background);
+	}
+
 
 
 #if __WIN32__
@@ -232,12 +251,16 @@ void text_color_init (int enable_color)
 	}
 
 #else
-	if (g_enable_color) {
-	  //printf ("%s", clear_eos);
+	if (g_enable_color == 1) {
 	  printf ("%s", background_white);
 	  printf ("%s", clear_eos);
-	  printf ("%s", black);
 	}
+	else if (g_enable_color == 2) {
+	  printf ("%s", background_black);
+	  printf ("%s", clear_eos);
+	  printf ("%s", white);
+	}
+
 #endif
 }
 
@@ -260,7 +283,12 @@ void text_color_set ( enum dw_color_e c )
 
 	  default:
 	  case DW_COLOR_INFO:
-	    attr = BACKGROUND_WHITE;
+	    if (g_enable_color == 1) {
+	      attr = FOREGROUND_BLACK | BACKGROUND_WHITE;
+	    }
+            else {
+	       attr = FOREGROUND_WHITE | BACKGROUND_BLACK;
+		}
 	    break;
 
 	  case DW_COLOR_ERROR:
@@ -280,7 +308,7 @@ void text_color_set ( enum dw_color_e c )
 	    break;
 
 	  case DW_COLOR_DEBUG:
-	    attr = FOREGROUND_GREEN | BACKGROUND_WHITE;
+	    attr = FOREGROUND_GREEN | FOREGROUND_INTENSITY |  BACKGROUND_WHITE;
 	    break;
 	}
 
@@ -299,32 +327,37 @@ void text_color_set ( enum dw_color_e c )
 	if (g_enable_color == 0) {
 	  return;
 	}
-
 	switch (c) {
 
 	  default:
 	  case DW_COLOR_INFO:
-	    printf ("%s", black);
-	    break;
+	  if (g_enable_color == 1) {
+	        printf ("%s%s%s", background, black, background);
+	  }
+	  else {
+	        printf ("%s%s", background, white);
+	  }
+	  break;
 
 	  case DW_COLOR_ERROR:
-	    printf ("%s", red);
+	    printf ("%s%s", background, red);
 	    break;
 
 	  case DW_COLOR_REC:
-	    printf ("%s", green);
+	    printf ("%s%s", background, green);
 	    break;
 
 	  case DW_COLOR_DECODED:
-	    printf ("%s", blue);
+	    printf ("%s%s", background, blue);
 	    break;
 
 	  case DW_COLOR_XMIT:
-	    printf ("%s", magenta);
+	    printf ("%s%s", background, magenta);
 	    break;
 
 	  case DW_COLOR_DEBUG:
-	    printf ("%s", dark_green);
+	    printf ("%s%s", background, dark_green);
+	    if (g_enable_color == 1) { printf("%s",background);}
 	    break;
 	}
 }
@@ -372,8 +405,7 @@ int dw_printf (const char *fmt, ...)
 	return (len);
 }
 
-
-
+#define TESTC 0
 #if TESTC
 main () 
 {
